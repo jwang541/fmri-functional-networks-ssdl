@@ -2,114 +2,118 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch.autograd.set_detect_anomaly(True)
 
-# maps a N x T x D x H x W tensor --> N x K x D x H x W tensor
-class Model(nn.Module):
-    def __init__(self, c_features=16, k_networks=17, eps_normalization=1e-9):
+
+class FeatureExtractor(nn.Module):
+    def __init__(self, c_features, eps=1e-9):
         super().__init__()
+        self.eps = eps
+        self.conv = nn.Conv3d(1, c_features, kernel_size=3, stride=1, padding=1, bias=False)
+        self.norm = nn.InstanceNorm3d(c_features, affine=True)
 
-        self.eps_normalization = eps_normalization
+        nn.init.trunc_normal_(self.conv.weight, std=0.01, a=-0.02, b=0.02)
 
-        # batch normalization
-        self.batch_normalization = nn.BatchNorm3d(1)
+    def forward(self, X):
+        # Temporally separated convolution
+        X = F.leaky_relu(torch.stack([
+            self.conv(X[:, i, None, :, :, :])
+            for i in range(X.shape[1])
+        ], 0))
 
-        # time-invariant representation learning
-        self.representation_conv1 = nn.Conv3d(1, c_features, kernel_size=3, stride=1, padding=1)
+        # Average pooling along temporal axis
+        X = torch.mean(X, 0)
+        X = self.norm(X)
 
-        # functional network learning
-        self.functional_bn1 = nn.BatchNorm3d(c_features)
-        self.functional_conv1 = nn.Conv3d(c_features, 16, kernel_size=3, stride=1, padding=1)
-        self.functional_bn2 = nn.BatchNorm3d(16)
-        self.functional_conv2 = nn.Conv3d(16, 32, kernel_size=3, stride=2, padding=1)
-        self.functional_bn3 = nn.BatchNorm3d(32)
-        self.functional_conv3 = nn.Conv3d(32, 32, kernel_size=3, stride=2, padding=1)
-        self.functional_bn4 = nn.BatchNorm3d(32)
-        self.functional_conv4 = nn.Conv3d(32, 32, kernel_size=3, stride=2, padding=1)
+        return X
 
-        self.functional_bn5 = nn.BatchNorm3d(32)
-        self.functional_deconv1 = nn.ConvTranspose3d(32, 32, kernel_size=3, stride=2, padding=1, output_padding=1)
-        self.functional_bn6 = nn.BatchNorm3d(64)
-        self.functional_deconv2 = nn.ConvTranspose3d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1)
-        self.functional_bn7 = nn.BatchNorm3d(64)
-        self.functional_deconv3 = nn.ConvTranspose3d(64, 16, kernel_size=3, stride=2, padding=1, output_padding=1)
 
-        self.functional_bn8 = nn.BatchNorm3d(32)
-        self.functional_conv5 = nn.Conv3d(32, 16, kernel_size=3, stride=1, padding=1)
-        self.functional_bn9 = nn.BatchNorm3d(16)
-        self.functional_conv6 = nn.Conv3d(16, 16, kernel_size=3, stride=1, padding=1)
+class UNet(nn.Module):
+    def __init__(self, c_features, eps=1e-9):
+        super().__init__()
+        self.eps = eps
 
-        self.functional_bn10 = nn.BatchNorm3d(16)
-        self.functional_conv7 = nn.Conv3d(16, k_networks, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv3d(c_features, 16, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv2 = nn.Conv3d(16, 32, kernel_size=3, stride=2, padding=1, bias=False)
+        self.conv3 = nn.Conv3d(32, 32, kernel_size=3, stride=2, padding=1, bias=False)
+        self.conv4 = nn.Conv3d(32, 32, kernel_size=3, stride=2, padding=1, bias=False)
+        self.deconv5 = nn.Conv3d(32, 32, kernel_size=3, stride=1, padding=1, bias=False)
+        self.deconv6 = nn.Conv3d(64, 32, kernel_size=3, stride=1, padding=1, bias=False)
+        self.deconv7 = nn.Conv3d(64, 16, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv8 = nn.Conv3d(32, 16, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv9 = nn.Conv3d(16, 16, kernel_size=3, stride=1, padding=1, bias=False)
 
-        '''self.functional_bn1 = nn.Identity()
-        self.functional_bn2 = nn.Identity()
-        self.functional_bn3 = nn.Identity()
-        self.functional_bn4 = nn.Identity()
-        self.functional_bn5 = nn.Identity()
-        self.functional_bn6 = nn.Identity()
-        self.functional_bn7 = nn.Identity()
-        self.functional_bn8 = nn.Identity()
-        self.functional_bn9 = nn.Identity()
-        self.functional_bn10 = nn.Identity()'''
+        nn.init.trunc_normal_(self.conv1.weight, std=0.01, a=-0.02, b=0.02)
+        nn.init.trunc_normal_(self.conv2.weight, std=0.01, a=-0.02, b=0.02)
+        nn.init.trunc_normal_(self.conv3.weight, std=0.01, a=-0.02, b=0.02)
+        nn.init.trunc_normal_(self.conv4.weight, std=0.01, a=-0.02, b=0.02)
+        nn.init.trunc_normal_(self.deconv5.weight, std=0.01, a=-0.02, b=0.02)
+        nn.init.trunc_normal_(self.deconv6.weight, std=0.01, a=-0.02, b=0.02)
+        nn.init.trunc_normal_(self.deconv7.weight, std=0.01, a=-0.02, b=0.02)
+        nn.init.trunc_normal_(self.conv8.weight, std=0.01, a=-0.02, b=0.02)
+        nn.init.trunc_normal_(self.conv9.weight, std=0.01, a=-0.02, b=0.02)
 
-    def forward(self, x):
-        # time-invariant representation learning module
-        x = torch.stack([
-            self.representation_conv1(x[:, None, i]) for i in range(x.shape[0])
-        ], 0)
-        x = torch.mean(x, 0)
+        self.norm1 = nn.InstanceNorm3d(16, affine=True)
+        self.norm2 = nn.InstanceNorm3d(32, affine=True)
+        self.norm3 = nn.InstanceNorm3d(32, affine=True)
+        self.norm4 = nn.InstanceNorm3d(32, affine=True)
+        self.norm5 = nn.InstanceNorm3d(32, affine=True)
+        self.norm6 = nn.InstanceNorm3d(32, affine=True)
+        self.norm7 = nn.InstanceNorm3d(16, affine=True)
+        self.norm8 = nn.InstanceNorm3d(16, affine=True)
+        self.norm9 = nn.InstanceNorm3d(16, affine=True)
 
-        # functional network learning module
-        x0 = self.functional_bn1(x)
-        x1 = self.functional_bn2(F.leaky_relu(self.functional_conv1(x0)))
-        x2 = self.functional_bn3(F.leaky_relu(self.functional_conv2(x1)))
-        x3 = self.functional_bn4(F.leaky_relu(self.functional_conv3(x2)))
-        x = self.functional_bn5(F.leaky_relu(self.functional_conv4(x3)))
+    def forward(self, X):
+        X1 = self.norm1(F.leaky_relu(self.conv1(X), negative_slope=0.01))
+        X2 = self.norm2(F.leaky_relu(self.conv2(X1), negative_slope=0.01))
+        X3 = self.norm3(F.leaky_relu(self.conv3(X2), negative_slope=0.01))
+        X4 = self.norm4(F.leaky_relu(self.conv4(X3), negative_slope=0.01))
+        X5 = self.norm5(F.leaky_relu(self.deconv5(X4), negative_slope=0.01))
+        X5 = torch.cat([F.interpolate(X5, X3.shape[2:5]), X3], 1)
+        X6 = self.norm6(F.leaky_relu(self.deconv6(X5), negative_slope=0.01))
+        X6 = torch.cat([F.interpolate(X6, X2.shape[2:5]), X2], 1)
+        X7 = self.norm7(F.leaky_relu(self.deconv7(X6), negative_slope=0.01))
+        X7 = torch.cat([F.interpolate(X7, X1.shape[2:5]), X1], 1)
+        X8 = self.norm8(F.leaky_relu(self.conv8(X7), negative_slope=0.01))
+        X9 = self.norm9(F.leaky_relu(self.conv9(X8), negative_slope=0.01))
+        return X9
 
-        x = self.functional_bn6(F.leaky_relu(torch.cat(
-            (self.functional_deconv1(x, x3.shape), x3), 1)))
-        x = self.functional_bn7(F.leaky_relu(torch.cat(
-            (self.functional_deconv2(x, x2.shape), x2), 1)))
-        x = self.functional_bn8(F.leaky_relu(torch.cat(
-            (self.functional_deconv3(x, x1.shape), x1), 1)))
 
-        x = self.functional_bn9(F.leaky_relu(self.functional_conv5(x)))
-        x = self.functional_bn10(F.leaky_relu(self.functional_conv6(x)))
+class Output(nn.Module):
+    def __init__(self, k_networks, eps=1e-9):
+        super().__init__()
+        self.eps = eps
+        self.conv = nn.Conv3d(16, k_networks, kernel_size=3, stride=1, padding=1)
+        nn.init.trunc_normal_(self.conv.weight, std=0.01, a=-0.02, b=0.02)
 
-        x = F.relu(self.functional_conv7(x))
-
-        # rescale so maximum of each sample is 1
-        component_max = torch.amax(x, dim=(2, 3, 4))
-
-        x = torch.stack([
+    def forward(self, X):
+        X = F.relu(self.conv(X))
+        component_max = torch.amax(X, dim=(2, 3, 4))
+        X = torch.stack([
             torch.stack([
-                x[i, j] / (component_max[i, j] + self.eps_normalization)
+                X[i, j] / (component_max[i, j] + self.eps)
                 for j in range(component_max.shape[1])
             ]) for i in range(component_max.shape[0])
         ])
+        return X
 
-        x = torch.clamp_max(x, 1.0)
+
+# maps a N x T x D x H x W tensor --> N x K x D x H x W tensor
+class Model(nn.Module):
+    def __init__(self, c_features=16, k_networks=17, eps=1e-9):
+        super().__init__()
+
+        self.eps = eps
+
+        self.feature_extractor = FeatureExtractor(c_features)
+        self.unet = UNet(c_features)
+        self.output = Output(k_networks)
+
+    def forward(self, x):
+        x = self.feature_extractor(x)
+        x = self.unet(x)
+        x = self.output(x)
 
         return x
 
-
-if __name__ == '__main__':
-    # batch size 12, 120 time points, 128 x 128 x 1 image
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    '''I = torch.randn(12, 120, 128, 128, 1).to(device)
-    m = Model().to(device)
-    out = m(I)
-    print(out.shape)
-    out[0, 0, 0, 0, 0].backward()'''
-
-    with torch.no_grad():
-        for i in range(100):
-            I = torch.randn(1, 120, 128, 128, 1).to(device)
-
-            m = Model().to(device)
-            out = m(I)
-
-            print(out.shape)
-            print(out)
