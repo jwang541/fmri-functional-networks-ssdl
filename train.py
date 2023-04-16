@@ -19,7 +19,7 @@ def time_courses(X, V):
     )
 
 
-def finetune_loss(mri, fns, trade_off=10.0, eps=1.0e-5):
+def finetune_loss(mri, fns, trade_off=10.0, eps=1e-8):
     assert (len(mri.shape) == 5)
     assert (len(fns.shape) == 5)
     assert (fns.shape[0] == mri.shape[0])
@@ -72,17 +72,9 @@ def pretrain_loss(mri, fns, eps=1e-8):
         spatial_density = fns[:, k, :, :, :] / (spatial_mass + eps)
         TC_k = torch.einsum('ntxyz, nxyz -> nt', mri, spatial_density)
         TC = torch.cat((TC, TC_k[:, :, None]), dim=2)
-    X_recon = torch.empty(size=(
-        mri.shape[0],
-        0,
-        mri.shape[2],
-        mri.shape[3],
-        mri.shape[4]
-    )).to(device)
-    for t in range(mri.shape[1]):
-        TC_t = TC[:, t, :]
-        X_recon_t = torch.einsum('nk, nkxyz -> nxyz', TC_t, fns)
-        X_recon = torch.cat((X_recon, X_recon_t[:, None, :, :, :]), dim=1)
+
+    X_recon = torch.einsum('ntk, nkxyz -> ntxyz', TC, fns)
+
     recon_error = torch.square(X_recon - mri)
     recon_loss = torch.sum(recon_error)
 
@@ -111,16 +103,16 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1.0e-4)
 
-    for epoch in range(30):
+    for epoch in range(10):
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             X = data.float().to(device)
 
             optimizer.zero_grad()
             Y = model(X)
-            #loss = loss_finetune(mri=X, fns=Y)
 
-            loss = finetune_loss(mri=X, fns=Y)
+            #loss = finetune_loss(mri=X, fns=Y)
+            loss = pretrain_loss(mri=X, fns=Y)
 
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
