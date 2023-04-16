@@ -3,7 +3,7 @@ import torch
 from model import Model
 from simulated_dataset import SimulatedFMRIDataset
 
-from train import loss_fn
+from train import finetune_loss
 
 
 
@@ -30,7 +30,7 @@ if __name__ == '__main__':
             I = torch.greater(X, 200.0)
             Y = model(X)
 
-            loss = loss_fn(mri=X, fns=Y, indices=I)
+            loss = finetune_loss(mri=X, fns=Y, indices=I)
 
             print(i, loss.item(), X.shape)
 
@@ -61,7 +61,7 @@ if __name__ == '__main__':
         print('-----------------------')
         #print('M_0', loss_fn(mri=MRI[None], fns=M_0(MRI[None])))
         #print('M_1', loss_fn(mri=MRI[None], fns=M_1(MRI[None])))
-        print('M_100', loss_fn(mri=MRI[None], fns=M_100(MRI[None]), indices=I[None]).item())
+        print('M_100', finetune_loss(mri=MRI[None], fns=M_100(MRI[None]), indices=I[None]).item())
         #print('M_200', loss_fn(mri=MRI[None], fns=M_200(MRI[None])))
         print('-----------------------')
 

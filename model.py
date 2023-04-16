@@ -21,11 +21,9 @@ class FeatureExtractor(nn.Module):
             self.conv(X[:, i, None, :, :, :])
             for i in range(X.shape[1])
         ], 0))
-
         # Average pooling along temporal axis
         X = torch.mean(X, 0)
         X = self.norm(X)
-
         return X
 
 
