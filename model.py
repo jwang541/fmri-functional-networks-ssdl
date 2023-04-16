@@ -21,9 +21,11 @@ class FeatureExtractor(nn.Module):
             self.conv(X[:, i, None, :, :, :])
             for i in range(X.shape[1])
         ], 0))
+
         # Average pooling along temporal axis
         X = torch.mean(X, 0)
         X = self.norm(X)
+
         return X
 
 
@@ -88,12 +90,9 @@ class Output(nn.Module):
     def forward(self, X):
         X = F.relu(self.conv(X))
         component_max = torch.amax(X, dim=(2, 3, 4))
-        X = torch.stack([
-            torch.stack([
-                X[i, j] / (component_max[i, j] + self.eps)
-                for j in range(component_max.shape[1])
-            ]) for i in range(component_max.shape[0])
-        ])
+        X = torch.einsum('nkxyz, nk -> nkxyz',
+                         X,
+                         1.0 / (component_max + self.eps))
         return X
 
 
@@ -114,4 +113,3 @@ class Model(nn.Module):
         x = self.output(x)
 
         return x
-
