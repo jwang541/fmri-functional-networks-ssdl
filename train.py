@@ -58,26 +58,14 @@ def finetune_loss(mri, fns, trade_off=10.0, eps=1e-8):
         loss = loss + data_fitting + trade_off * hoyer
     return loss
 
-
-
 def pretrain_loss(mri, fns, eps=1e-8):
-    TC = torch.empty(size=(
-        mri.shape[0],
-        mri.shape[1],
-        0
-    )).to(device)
-    # replace for loops with a big einsum
-    for k in range(fns.shape[1]):
-        spatial_mass = torch.sum(fns[:, k], dim=(1, 2, 3))
-        spatial_density = fns[:, k, :, :, :] / (spatial_mass + eps)
-        TC_k = torch.einsum('ntxyz, nxyz -> nt', mri, spatial_density)
-        TC = torch.cat((TC, TC_k[:, :, None]), dim=2)
-
+    spatial_mass = torch.sum(fns, dim=(2, 3, 4))
+    spatial_density = torch.einsum('nkxyz, nk -> nkxyz', fns, 1.0 / (spatial_mass + eps))
+    TC = torch.einsum('ntxyz, nkxyz -> ntk', mri, spatial_density)
     X_recon = torch.einsum('ntk, nkxyz -> ntxyz', TC, fns)
 
     recon_error = torch.square(X_recon - mri)
     recon_loss = torch.sum(recon_error)
-
     return recon_loss
 
 
@@ -103,7 +91,7 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1.0e-4)
 
-    for epoch in range(10):
+    for epoch in range(30):
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             X = data.float().to(device)
