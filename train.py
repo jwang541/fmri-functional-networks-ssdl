@@ -43,8 +43,7 @@ def finetune_loss(mri, fns, trade_off=10.0, eps=1.0e-5):
             for k in range(V.shape[0])
         ])
 
-        lstsq = torch.linalg.lstsq(V.t(), X.t())
-        U = lstsq.solution.t()
+        U = time_courses(X, V)
 
         X_approx = torch.mm(U, V)
 
@@ -112,7 +111,7 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1.0e-4)
 
-    for epoch in range(3):
+    for epoch in range(30):
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             X = data.float().to(device)
