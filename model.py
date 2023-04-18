@@ -98,7 +98,7 @@ class Output(nn.Module):
 
 # maps a N x T x D x H x W tensor --> N x K x D x H x W tensor
 class Model(nn.Module):
-    def __init__(self, c_features=16, k_networks=17, eps=1e-9):
+    def __init__(self, k_networks=17, c_features=16, eps=1e-9):
         super().__init__()
 
         self.eps = eps

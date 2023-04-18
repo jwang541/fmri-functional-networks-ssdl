@@ -3,7 +3,7 @@ import torch
 
 from model import Model
 from simulated_dataset import SimulatedFMRIDataset
-from train import time_courses, finetune_loss
+from loss import time_courses, finetune_loss, pretrain_loss
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -18,11 +18,13 @@ if __name__ == '__main__':
         )
 
         model = Model().to(device)
-        model.load_state_dict(torch.load('models/w100.pth'))
+        model.load_state_dict(
+            torch.load(
+                './out/lr0.0001_k17_c16_sp10.0_preFalse_finetune/weights_300.pth'))
         model.eval()
 
         # visualize fmri data
-        mri = testset.__getitem__(76).float().to(device)
+        mri = testset.__getitem__(89).float().to(device)
         fns = model(mri[None])[0, :, :, :, 0]
 
         X = torch.reshape(mri, (mri.shape[0], -1))
