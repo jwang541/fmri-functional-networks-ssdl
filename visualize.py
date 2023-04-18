@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import torch
 
+from config import *
 from model import Model
 from simulated_dataset import SimulatedFMRIDataset
 from loss import time_courses, finetune_loss, pretrain_loss
@@ -9,10 +10,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if __name__ == '__main__':
     with torch.no_grad():
+        config = eval_config()
+
         testset = SimulatedFMRIDataset('data/simtb1', print_params=True)
         testloader = torch.utils.data.DataLoader(
             testset,
-            batch_size=1,
+            batch_size=config.batch_size,
             shuffle=True,
             num_workers=4
         )

@@ -14,7 +14,7 @@ if __name__ == '__main__':
         config = eval_config()
 
         model = Model()
-        model.load_state_dict(torch.load('models/w100.pth'))
+        model.load_state_dict(torch.load('out/lr0.0001_k17_c16_sp10.0_preFalse_finetune/weights_300.pth'))
         model = model.to(device)
         model.eval()
 
