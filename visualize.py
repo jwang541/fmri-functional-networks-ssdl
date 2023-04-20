@@ -21,9 +21,12 @@ if __name__ == '__main__':
         )
 
         model = Model().to(device)
+        # model.load_state_dict(
+        #     torch.load(
+        #         './out/lr0.0001_k17_c16_sp10.0_preFalse_finetune/weights_300.pth'))
         model.load_state_dict(
             torch.load(
-                './out/lr0.0001_k17_c16_sp10.0_preFalse_finetune/weights_300.pth'))
+                './out/lr0.0001_k17_c16_pretrain/weights_300.pth'))
         model.eval()
 
         # visualize fmri data

@@ -11,7 +11,7 @@ def finetune_config():
     config.batch_size = 1
     config.lr = 1e-4
     config.sparse_trade_off = 10.0
-    config.use_pretrained = False
+    config.use_pretrained = True
 
     # model parameters
     config.n_time_invariant_features = 16
@@ -23,7 +23,7 @@ def finetune_config():
                                                                               config.n_time_invariant_features,
                                                                               config.sparse_trade_off,
                                                                               config.use_pretrained)
-    config.pretrained_weights_file = None
+    config.pretrained_weights_file = './out/lr0.0001_k17_c16_pretrain/weights_300.pth'
     config.checkpoint_interval = 10
 
     return config
@@ -34,7 +34,7 @@ def pretrain_config():
     config.mode = 'pretrain'
 
     # training parameters
-    config.n_epochs = 30
+    config.n_epochs = 300
     config.batch_size = 1
     config.lr = 1e-4
 

@@ -13,7 +13,10 @@ torch.autograd.set_detect_anomaly(True)
 
 
 if __name__ == '__main__':
+    # config = pretrain_config()
     config = finetune_config()
+    print('Configuration: ', config.mode)
+
     if not os.path.exists(config.output_dir):
         os.makedirs(config.output_dir)
 
@@ -26,6 +29,10 @@ if __name__ == '__main__':
 
     model = Model(k_networks=config.n_functional_networks,
                   c_features=config.n_time_invariant_features)
+    if config.mode == 'finetune' and config.use_pretrained:
+        model.load_state_dict(torch.load(config.pretrained_weights_file))
+        print('Pretraining with: ', config.pretrained_weights_file)
+
     model = model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), config.lr)
