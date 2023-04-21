@@ -6,6 +6,7 @@ from config import *
 from model import Model
 from loss import finetune_loss, pretrain_loss
 from simulated_dataset import SimulatedFMRIDataset
+from example_3d_dataset import Example3dDataset
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -26,6 +27,13 @@ if __name__ == '__main__':
         shuffle=True,
         num_workers=4
     )
+    # trainloader = torch.utils.data.DataLoader(
+    #     Example3dDataset(n_subjects=100),
+    #     batch_size=config.batch_size,
+    #     shuffle=True,
+    #     num_workers=4
+    # )
+    len_dataset = len(trainloader.dataset)
 
     model = Model(k_networks=config.n_functional_networks,
                   c_features=config.n_time_invariant_features)
@@ -58,8 +66,8 @@ if __name__ == '__main__':
             optimizer.step()
 
             running_loss += loss.item()
-            if i % 100 == 99:
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 100:.3f}')
+            if i % len_dataset == len_dataset - 1:
+                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / len_dataset:.3f}')
                 running_loss = 0.0
 
         if epoch % config.checkpoint_interval == 0:
