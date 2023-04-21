@@ -11,7 +11,7 @@ def finetune_config():
     config.batch_size = 1
     config.lr = 1e-4
     config.sparse_trade_off = 10.0
-    config.use_pretrained = True
+    config.use_pretrained = False
 
     # model parameters
     config.n_time_invariant_features = 16
