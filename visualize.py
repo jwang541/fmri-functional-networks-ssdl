@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 
 from config import *
-from model import Model
+from model import BaseModel
 from simulated_dataset import SimulatedFMRIDataset
 from loss import time_courses, finetune_loss, pretrain_loss
 
@@ -20,7 +20,7 @@ if __name__ == '__main__':
             num_workers=4
         )
 
-        model = Model().to(device)
+        model = BaseModel().to(device)
         # model.load_state_dict(
         #     torch.load(
         #         './out/lr0.0001_k17_c16_sp10.0_preFalse_finetune/weights_300.pth'))

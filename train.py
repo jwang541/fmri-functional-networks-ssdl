@@ -3,15 +3,13 @@ import torch
 import torch.nn as nn
 
 from config import *
-from model import Model
+from model import BaseModel
 from loss import finetune_loss, pretrain_loss
 from simulated_dataset import SimulatedFMRIDataset
 from example_3d_dataset import Example3dDataset
 
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 torch.autograd.set_detect_anomaly(True)
-
 
 if __name__ == '__main__':
     # config = pretrain_config()
@@ -35,8 +33,8 @@ if __name__ == '__main__':
     # )
     len_dataset = len(trainloader.dataset)
 
-    model = Model(k_networks=config.n_functional_networks,
-                  c_features=config.n_time_invariant_features)
+    model = BaseModel(k_networks=config.n_functional_networks,
+                      c_features=config.n_time_invariant_features)
     if config.mode == 'finetune' and config.use_pretrained:
         model.load_state_dict(torch.load(config.pretrained_weights_file))
         print('Pretraining with: ', config.pretrained_weights_file)
