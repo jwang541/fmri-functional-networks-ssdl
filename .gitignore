@@ -1,1 +1,15 @@
 out/*
+
+# Compiled Python files
+*.pyc
+__pycache__/
+
+# Python cache directories
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE-specific files
+.idea/
+.vscode/
