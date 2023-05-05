@@ -28,7 +28,7 @@ class SimulatedFMRIDataset(Dataset):
             print('# components:', self.n_components)
             print('fmri size:', self.fmri_size)
             print('# time points:', self.n_time_points)
-            print('point shape:', self.__getitem__(0).shape)
+            print('point shape:', self.__getitem__(0)[0].shape)
 
     def __len__(self):
         return self.len
@@ -45,8 +45,7 @@ class SimulatedFMRIDataset(Dataset):
             mask = torch.greater(X, 200.0)[0, :, :, :]
             var, mu = torch.var_mean(X, dim=(0,))
             X = (X - mu) / torch.sqrt(var + self.eps)
-            X = X * mask
-            return X
+            return X, mask
 
 
 if __name__ == '__main__':

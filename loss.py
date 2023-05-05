@@ -8,7 +8,7 @@ def time_courses(X, V):
     )
 
 
-def finetune_loss(mri, fns, trade_off=10.0, eps=1e-8):
+def finetune_loss(mri, fns, mask, trade_off=10.0, eps=1e-8):
     assert (len(mri.shape) == 5)
     assert (len(fns.shape) == 5)
     assert (fns.shape[0] == mri.shape[0])
@@ -20,15 +20,16 @@ def finetune_loss(mri, fns, trade_off=10.0, eps=1e-8):
     for i in range(mri.shape[0]):
         X = torch.reshape(mri[i], (mri.shape[1], -1))
         V = torch.reshape(fns[i], (fns.shape[1], -1))
-        mask = torch.amax(torch.greater(X, 0.0), dim=0)
+        M = torch.reshape(mask[i], (-1,))
+        # mask = torch.amax(torch.greater(X, 0.0), dim=0)
 
         X = torch.stack([
-            torch.masked_select(X[k], mask)
+            torch.masked_select(X[k], M)
             for k in range(X.shape[0])
         ])
 
         V = torch.stack([
-            torch.masked_select(V[k], mask)
+            torch.masked_select(V[k], M)
             for k in range(V.shape[0])
         ])
 
@@ -44,6 +45,7 @@ def finetune_loss(mri, fns, trade_off=10.0, eps=1e-8):
         data_fitting = data_fitting / (var + eps)
         data_fitting = torch.sum(data_fitting)
 
+        print(loss, data_fitting, trade_off, hoyer)
         loss = loss + data_fitting + trade_off * hoyer
 
     return loss

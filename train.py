@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from config import *
-from model import BaseModel
+from model import BaseModel, AttentionModel
 from loss import finetune_loss, pretrain_loss
 from simulated_dataset import SimulatedFMRIDataset
 from example_3d_dataset import Example3dDataset
@@ -33,8 +33,15 @@ if __name__ == '__main__':
     # )
     len_dataset = len(trainloader.dataset)
 
-    model = BaseModel(k_networks=config.n_functional_networks,
-                      c_features=config.n_time_invariant_features)
+    if config.model_type == 'base':
+        model = BaseModel(k_networks=config.n_functional_networks,
+                          c_features=config.n_time_invariant_features)
+    elif config.model_type == 'se':
+        model = AttentionModel(k_networks=config.n_functional_networks,
+                               c_features=config.n_time_invariant_features)
+    else:
+        raise Exception('config.model_type should be \'base\' or \'se\'')
+
     if config.mode == 'finetune' and config.use_pretrained:
         model.load_state_dict(torch.load(config.pretrained_weights_file))
         print('Pretraining with: ', config.pretrained_weights_file)
@@ -46,15 +53,18 @@ if __name__ == '__main__':
     for epoch in range(config.n_epochs):
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
-            X = data.float().to(device)
+            X, mask = data
+            X = X.to(device).float()
+            mask = mask.to(device).bool()
 
             optimizer.zero_grad()
-            Y = model(X)
+            X = mask * X
+            Y = mask * model(X)
 
             if config.mode == 'pretrain':
                 loss = pretrain_loss(mri=X, fns=Y)
             elif config.mode == 'finetune':
-                loss = finetune_loss(mri=X, fns=Y, trade_off=config.sparse_trade_off)
+                loss = finetune_loss(mri=X, fns=Y, mask=mask, trade_off=config.sparse_trade_off)
             else:
                 raise Exception('config.mode should be \'pretrain\' or \'finetune\'')
 
