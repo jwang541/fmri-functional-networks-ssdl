@@ -17,7 +17,7 @@ def finetune_config():
     config.use_pretrained = False
 
     # model parameters
-    config.model_type = 'base'
+    config.model_type = 'se'                        # must be 'base' or 'se'
     config.n_time_invariant_features = 16
     config.n_functional_networks = 17
 
@@ -45,7 +45,7 @@ def pretrain_config():
     config.lr = 1e-4
 
     # model parameters
-    config.model_type = 'base'
+    config.model_type = 'base'                      # must be 'base' or 'se'                                           
     config.n_time_invariant_features = 16
     config.n_functional_networks = 17
 
@@ -68,7 +68,7 @@ def eval_config():
     config.batch_size = 1
 
     # IO parameters
-    config.weights_file = './out/base_lr0.0001_k17_c16_sp10.0_preFalse_finetune/weights_300.pth'
+    config.weights_file = './out/se_lr0.0001_k17_c16_sp10.0_preFalse_finetune/weights_300.pth'
 
     # extract model parameters from file name
     pattern = r'([\w-]+)_lr([\d\.]+)_k(\d+)_c(\d+)_sp([\d\.]+)_pre(False|True)_finetune'

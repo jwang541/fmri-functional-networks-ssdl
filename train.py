@@ -54,8 +54,8 @@ if __name__ == '__main__':
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             X, mask = data
-            X = X.to(device).float()
-            mask = mask.to(device).bool()
+            X = X.float().to(device)
+            mask = mask.bool().to(device)
 
             optimizer.zero_grad()
             X = mask * X

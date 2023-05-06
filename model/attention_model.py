@@ -14,19 +14,17 @@ class FeatureExtractor(nn.Module):
         self.eps = eps
         self.conv = nn.Conv3d(1, c_features, kernel_size=3, stride=1, padding=1, bias=False)
         self.norm = nn.InstanceNorm3d(c_features, affine=True)
-        self.scse = SCSqueezeExcitation3D
-
-        nn.init.trunc_normal_(self.conv.weight, std=0.01, a=-0.02, b=0.02)
+        self.scse = SCSqueezeExcitation3D(in_channels=c_features, channel_neurons=16)
 
     def forward(self, X):
         # Temporally separated convolution
-        X = F.leaky_relu(torch.stack([
-            self.conv(X[:, i, None, :, :, :])
+        X = torch.stack([
+            self.scse(F.leaky_relu(self.conv(X[:, i, None, :, :, :])))
             for i in range(X.shape[1])
-        ], 1))
+        ], 0)
 
         # Average pooling along temporal axis
-        X = torch.mean(X, 1)
+        X = torch.mean(X, 0)
         X = self.norm(X)
 
         return X

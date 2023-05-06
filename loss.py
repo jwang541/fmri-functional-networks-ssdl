@@ -45,7 +45,6 @@ def finetune_loss(mri, fns, mask, trade_off=10.0, eps=1e-8):
         data_fitting = data_fitting / (var + eps)
         data_fitting = torch.sum(data_fitting)
 
-        print(loss, data_fitting, trade_off, hoyer)
         loss = loss + data_fitting + trade_off * hoyer
 
     return loss
