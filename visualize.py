@@ -3,8 +3,8 @@ import torch
 
 from config import *
 from model import BaseModel, AttentionModel
-from simulated_dataset import SimulatedFMRIDataset
-from loss import time_courses, finetune_loss, pretrain_loss
+from datasets import SimulatedFMRIDataset
+from loss import time_courses
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         model = model.to(device)
         model.eval()
 
-        # visualize fmri data
+        # visualize fmri datasets
         mri, mask = testset.__getitem__(13)
         mri = mri.float().to(device)
         mask = mask.bool().to(device)
@@ -64,7 +64,7 @@ if __name__ == '__main__':
             V_learned[k][flattened_mask] = V_nz[k]
         V_learned = V_learned.cpu()
 
-        # visualize fmri data
+        # visualize fmri datasets
         mri_data = (mri * mask)[:, :, :, 0].cpu()
         rows, columns = 4, 5
         fig = plt.figure(figsize=(10, 10))
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
 
 
-        # visualize reconstructed mri data
+        # visualize reconstructed mri datasets
         mri_approx_data = torch.reshape(X_approx, mri_data.shape)
         rows, columns = 2, 5
         fig = plt.figure(figsize=(10, 10))

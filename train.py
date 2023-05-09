@@ -5,8 +5,7 @@ import torch.nn as nn
 from config import *
 from model import BaseModel, AttentionModel
 from loss import finetune_loss, pretrain_loss
-from simulated_dataset import SimulatedFMRIDataset
-from example_3d_dataset import Example3dDataset
+from datasets import SimulatedFMRIDataset, Example3dDataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 torch.autograd.set_detect_anomaly(True)
@@ -25,7 +24,7 @@ if __name__ == '__main__':
         shuffle=True,
         num_workers=4
     )
-    # trainloader = torch.utils.data.DataLoader(
+    # trainloader = torch.utils.datasets.DataLoader(
     #     Example3dDataset(n_subjects=100),
     #     batch_size=config.batch_size,
     #     shuffle=True,

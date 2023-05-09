@@ -2,7 +2,7 @@ import torch
 
 from config import *
 from model import BaseModel, AttentionModel
-from simulated_dataset import SimulatedFMRIDataset
+from datasets import SimulatedFMRIDataset
 from loss import finetune_loss
 
 
