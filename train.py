@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
         if epoch % config.checkpoint_interval == 0:
             torch.save(model.state_dict(), config.output_dir
-                       + 'weights_{}.pth'.format(epoch))
+                       + 'weights_{}.pt'.format(epoch))
 
     torch.save(model.state_dict(), config.output_dir
-               + 'weights_{}.pth'.format(config.n_epochs))
+               + 'weights_{}.pt'.format(config.n_epochs))

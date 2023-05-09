@@ -29,7 +29,7 @@ def finetune_config():
                 config.n_time_invariant_features,
                 config.sparse_trade_off,
                 config.use_pretrained)
-    config.pretrained_weights_file = './out/lr0.0001_k17_c16_pretrain/weights_300.pth'
+    config.pretrained_weights_file = './out/lr0.0001_k17_c16_pretrain/weights_300.pt'
     config.checkpoint_interval = 10
 
     return config
@@ -68,7 +68,7 @@ def eval_config():
     config.batch_size = 1
 
     # IO parameters
-    config.weights_file = './out/se_lr0.0001_k17_c16_sp10.0_preFalse_finetune/weights_300.pth'
+    config.weights_file = './out/se_lr0.0001_k17_c16_sp10.0_preFalse_finetune/weights_300.pt'
 
     # extract model parameters from file name
     pattern = r'([\w-]+)_lr([\d\.]+)_k(\d+)_c(\d+)_sp([\d\.]+)_pre(False|True)_finetune'

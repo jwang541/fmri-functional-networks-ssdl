@@ -21,7 +21,6 @@ def finetune_loss(mri, fns, mask, trade_off=10.0, eps=1e-8):
         X = torch.reshape(mri[i], (mri.shape[1], -1))
         V = torch.reshape(fns[i], (fns.shape[1], -1))
         M = torch.reshape(mask[i], (-1,))
-        # mask = torch.amax(torch.greater(X, 0.0), dim=0)
 
         X = torch.stack([
             torch.masked_select(X[k], M)
