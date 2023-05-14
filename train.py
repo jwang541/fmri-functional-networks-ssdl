@@ -48,7 +48,12 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), config.lr)
 
     for epoch in range(config.n_epochs):
-        running_loss = 0.0
+        if epoch % config.checkpoint_interval == 0:
+            torch.save(model.state_dict(), config.output_dir
+                       + 'weights_{}.pt'.format(epoch))
+
+        model.train()
+        train_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             X, mask = data
             X = X.float().to(device)
@@ -69,15 +74,31 @@ if __name__ == '__main__':
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
             optimizer.step()
+            train_loss += loss.item()
 
-            running_loss += loss.item()
-            if i % len_dataset == len_dataset - 1:
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / len_dataset:.3f}')
-                running_loss = 0.0
+        model.eval()
+        test_loss = 0.0
+        with torch.no_grad():
+            for i, data in enumerate(testloader, 0):
+                X, mask = data
+                X = X.float().to(device)
+                mask = mask.bool().to(device)
 
-        if epoch % config.checkpoint_interval == 0:
-            torch.save(model.state_dict(), config.output_dir
-                       + 'weights_{}.pt'.format(epoch))
+                optimizer.zero_grad()
+                X = X * mask
+                Y = model(X) * mask
+
+                if config.mode == 'pretrain':
+                    loss = pretrain_loss(mri=X, fns=Y)
+                elif config.mode == 'finetune':
+                    loss = finetune_loss(mri=X, fns=Y, mask=mask, trade_off=config.sparse_trade_off)
+                else:
+                    raise Exception('config.mode should be \'pretrain\' or \'finetune\'')
+
+                test_loss += loss.item()
+
+        print(f'[{epoch + 1}, {i + 1:5d}]\t\ttrain loss: {train_loss / len(trainloader.dataset):.3f}'
+              f'\t\ttest loss: {test_loss / len(testloader.dataset):.3f}')
 
     torch.save(model.state_dict(), config.output_dir
                + 'weights_{}.pt'.format(config.n_epochs))
