@@ -47,17 +47,12 @@ def finetune_loss(mri, fns, mask, trade_off=10.0, eps=1e-8):
             )
         )
 
-        # print(X.shape, X_approx.shape)
-        # print(torch.max(X).item(), torch.max(X_approx).item())
-        # print(torch.sum(X).item(), torch.sum(X_approx).item())
-        # print(torch.sum(X * X).item(), torch.sum(X_approx * X_approx).item())
-
         data_fitting = torch.square(X - X_approx)
         data_fitting = data_fitting / (var + eps)
         data_fitting = torch.sum(data_fitting)
 
         loss = loss + data_fitting + trade_off * hoyer
-        print('' + str(data_fitting.item()) + '\t\t' + str((trade_off * hoyer).item()))
+        # print('' + str(data_fitting.item()) + '\t\t' + str((trade_off * hoyer).item()))
 
     return loss
 
