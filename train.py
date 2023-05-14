@@ -84,7 +84,6 @@ if __name__ == '__main__':
                 X = X.float().to(device)
                 mask = mask.bool().to(device)
 
-                optimizer.zero_grad()
                 X = X * mask
                 Y = model(X) * mask
 
