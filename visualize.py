@@ -3,7 +3,7 @@ import torch
 
 from config import *
 from model import BaseModel, AttentionModel
-from datasets import SimulatedFMRIDataset
+from datasets import SimulatedDataset, SimulatedDatasetNII
 from loss import time_courses
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -12,13 +12,7 @@ if __name__ == '__main__':
     with torch.no_grad():
         config = eval_config()
 
-        testset = SimulatedFMRIDataset('data/simtb1', print_params=True)
-        testloader = torch.utils.data.DataLoader(
-            testset,
-            batch_size=config.batch_size,
-            shuffle=True,
-            num_workers=4
-        )
+        testset = SimulatedDatasetNII('data/ssdl_fn_sim_data', train=False, print_params=False)
 
         if config.model_type == 'base':
             model = BaseModel(k_networks=config.n_functional_networks,

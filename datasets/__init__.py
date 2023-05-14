@@ -1,2 +1,3 @@
-from .simulated_dataset import SimulatedFMRIDataset
+from .simulated_dataset import SimulatedDataset
 from .example_3d_dataset import Example3dDataset
+from .simulated_dataset_nii import SimulatedDatasetNII

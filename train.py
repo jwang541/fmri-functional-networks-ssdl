@@ -5,13 +5,12 @@ import torch.nn as nn
 from config import *
 from model import BaseModel, AttentionModel
 from loss import finetune_loss, pretrain_loss
-from datasets import SimulatedFMRIDataset, Example3dDataset
+from datasets import SimulatedDataset, SimulatedDatasetNII, Example3dDataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 torch.autograd.set_detect_anomaly(True)
 
 if __name__ == '__main__':
-    # config = pretrain_config()
     config = finetune_config()
     print('Configuration: ', config.mode)
 
@@ -19,18 +18,17 @@ if __name__ == '__main__':
         os.makedirs(config.output_dir)
 
     trainloader = torch.utils.data.DataLoader(
-        SimulatedFMRIDataset('data/simtb1', print_params=False),
+        SimulatedDatasetNII('data/ssdl_fn_sim_data', train=True, print_params=False),
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=4
     )
-    # trainloader = torch.utils.datasets.DataLoader(
-    #     Example3dDataset(n_subjects=100),
-    #     batch_size=config.batch_size,
-    #     shuffle=True,
-    #     num_workers=4
-    # )
-    len_dataset = len(trainloader.dataset)
+    testloader = torch.utils.data.DataLoader(
+        SimulatedDatasetNII('data/ssdl_fn_sim_data', train=False, print_params=False),
+        batch_size=config.batch_size,
+        shuffle=True,
+        num_workers=4
+    )
 
     if config.model_type == 'base':
         model = BaseModel(k_networks=config.n_functional_networks,
@@ -43,7 +41,7 @@ if __name__ == '__main__':
 
     if config.mode == 'finetune' and config.use_pretrained:
         model.load_state_dict(torch.load(config.pretrained_weights_file))
-        print('Pretraining with: ', config.pretrained_weights_file)
+        print('Finetuning with: ', config.pretrained_weights_file)
 
     model = model.to(device)
 

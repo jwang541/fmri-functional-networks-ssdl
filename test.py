@@ -2,7 +2,7 @@ import torch
 
 from config import *
 from model import BaseModel, AttentionModel
-from datasets import SimulatedFMRIDataset
+from datasets import SimulatedDataset, SimulatedDatasetNII
 from loss import finetune_loss
 
 
@@ -25,7 +25,7 @@ if __name__ == '__main__':
         model = model.to(device)
         model.eval()
 
-        testset = SimulatedFMRIDataset('data/simtb1', print_params=False)
+        testset = SimulatedDatasetNII('data/ssdl_fn_sim_data', train=False, print_params=False)
         testloader = torch.utils.data.DataLoader(
             testset,
             batch_size=config.batch_size,
