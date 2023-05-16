@@ -33,7 +33,7 @@ if __name__ == '__main__':
             num_workers=4
         )
 
-        # Test 1: compare finetune loss on testing dataset
+        # Test 1: compare data reconstruction loss on testing dataset
         base_loss, se_loss = 0.0, 0.0
         for i, data in enumerate(testloader, 0):
             X, mask = data
@@ -44,18 +44,24 @@ if __name__ == '__main__':
             Y_base = mask * base_model(X)
             Y_se = mask * se_model(X)
 
-            base_loss += finetune_loss(mri=X, fns=Y_base, mask=mask, trade_off=0.1).item()
-            se_loss += finetune_loss(mri=X, fns=Y_se, mask=mask, trade_off=0.1).item()
+            base_loss += finetune_loss(mri=X, fns=Y_base, mask=mask, trade_off=0.0).item()
+            se_loss += finetune_loss(mri=X, fns=Y_se, mask=mask, trade_off=0.0).item()
 
-        print('- Average training loss -')
+        print('- Average data reconstruction loss -')
         print('Base model: ', base_loss / len(testset))
         print('scSE model: ', se_loss / len(testset))
         print()
 
-        # TODO Test 2: compare to simtb ground truth FNs (all testset subjects)
+        # Test 2: compare to simtb ground truth FNs (all testset subjects)
         print('- Ground truth spatial correlation -')
-        for i in range(len(testset)):
+        base_correlations = np.zeros(shape=(20, 20))
+        se_correlations = np.zeros(shape=(20, 20))
 
+        # calculate correlations between learned FNs and ground truth FNs,
+        # summed over all test subject data
+        base_outputs = []
+        se_outputs = []
+        for i in range(len(testset)):
             # unpack rsfMRI and mask data
             X, mask = testset.__getitem__(i)
             X, mask = X[None], mask[None]
@@ -83,6 +89,10 @@ if __name__ == '__main__':
                 for k in range(Y_se_mat.shape[0])
             ]).cpu().numpy()
 
+            # store outputs
+            base_outputs.append(Y_base_mat_masked)
+            se_outputs.append(Y_se_mat_masked)
+
             # load ground truth FNs
             sim_filename = './data/ssdl_fn_sim_data/data/sim_subject_{0:0=3d}_SIM.mat'.format(i + 81)
             sim_data = scipy.io.loadmat(sim_filename)
@@ -92,45 +102,58 @@ if __name__ == '__main__':
                 for k in range(sim_data['SM'].shape[0])
             ])
 
-            # form correlation matrix between ground truth and { base and se outputs }
-            base_correlations = np.zeros(shape=(20, 20))
-            se_correlations = np.zeros(shape=(20, 20))
+            # update correlation matrix between ground truth and { base and se outputs }
             for a in range(gt_fns_mat_masked.shape[0]):
                 for b in range(Y_base_mat_masked.shape[0]):
                     r, _ = scipy.stats.pearsonr(gt_fns_mat_masked[a], Y_base_mat_masked[b])
-                    base_correlations[a, b] = r
+                    base_correlations[a, b] += r
                 for b in range(Y_se_mat_masked.shape[0]):
                     r, _ = scipy.stats.pearsonr(gt_fns_mat_masked[a], Y_se_mat_masked[b])
-                    se_correlations[a, b] = r
+                    se_correlations[a, b] += r
 
-            # perform linear sum assignment with scipy Hungarian algorithm
-            base_row_ind, base_col_ind = scipy.optimize.linear_sum_assignment(-1.0 * base_correlations)
-            se_row_ind, se_col_ind = scipy.optimize.linear_sum_assignment(-1.0 * se_correlations)
+        # perform linear sum assignment over summed correlations to get group atlas
+        base_row_ind, base_col_ind = scipy.optimize.linear_sum_assignment(-1.0 * base_correlations)
+        se_row_ind, se_col_ind = scipy.optimize.linear_sum_assignment(-1.0 * se_correlations)
 
-            # print correlations and average correlation
+        # calculate and output correlations between learned FNs and group atlas
+        for i in range(20):
+            # load ground truth FNs
+            sim_filename = './data/ssdl_fn_sim_data/data/sim_subject_{0:0=3d}_SIM.mat'.format(i + 81)
+            sim_data = scipy.io.loadmat(sim_filename)
+            mask_mat_np = mask_mat.cpu().numpy()
+            gt_fns_mat_masked = np.stack([
+                np.extract(mask_mat_np, sim_data['SM'][k])
+                for k in range(sim_data['SM'].shape[0])
+            ])
+
+            # get outputs corresponding to the current subject
+            base_output = base_outputs[i]
+            se_output = se_outputs[i]
+
             print("Subject {}".format(i + 81))
-            for j in range(len(base_row_ind)):
-                print('FN {}'.format(base_row_ind[j] + 1),
-                      base_correlations[base_row_ind[j], base_col_ind[j]],
-                      se_correlations[se_row_ind[j], se_col_ind[j]])
-            print('Average {} {}'.format(
-                base_correlations[base_row_ind, base_col_ind].sum() / 20.0,
-                se_correlations[se_row_ind, se_col_ind].sum() / 20.0
+            sum_base_correlations = 0
+            sum_se_correlations = 0
+            for j in range(20):
+                # calculate correlation between output and current ground truth FN
+                base_correlation, _ = scipy.stats.pearsonr(gt_fns_mat_masked[j], base_output[base_col_ind[j]])
+                se_correlation, _ = scipy.stats.pearsonr(gt_fns_mat_masked[j], se_output[se_col_ind[j]])
+
+                sum_base_correlations += base_correlation
+                sum_se_correlations += se_correlation
+
+                # print correlations and average correlation
+                print('FN {}\t\tBASE {} {:.5f}\t\tSE {} {:.5f}'.format(
+                    j,
+                    base_col_ind[j],
+                    base_correlation,
+                    se_col_ind[j],
+                    se_correlation
+                ))
+            print('Average\t\tBASE {:.5f}\t\tSE {:.5f}'.format(
+                sum_base_correlations / 20.0,
+                sum_se_correlations / 20.0
             ))
             print()
 
-            #
-            # A = np.reshape(np.array(mat['SM']), (20, 128, 128))
-            # print(A)
-            # print(np.max(A))
-        
         # TODO Test 3: compare to simtb ground truth tcs
-        tc_correlation = np.zeros((20, 20))
-        for i in range(20):
-            for j in range(20):
-                r, _ = scipy.stats.pearsonr(sim_data['TC'][i], sim_data['TC'][j])
-                tc_correlation[i, j] = r
-        np.set_printoptions(suppress=True)
-        np.set_printoptions(precision=2)
-        np.set_printoptions(linewidth=100000)
-        print(tc_correlation)
+        
