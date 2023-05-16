@@ -50,11 +50,18 @@ class SimulatedDatasetNII(Dataset):
 
         with torch.no_grad():
             torch_dat = torch.from_numpy(nifti_dat)
+
+            # TODO: currently the dataset reverses the spatial dimensions
             X = torch.permute(torch_dat, (3, 0, 1, 2))
-            std, mu = torch.std_mean(
-                    torch.masked_select(
-                        torch.reshape(X, (X.shape[0], -1)),
-                        torch.reshape(self.mask, (-1,))
-                    ))
+
+            # std, mu = torch.std_mean(
+            #     torch.stack(
+            #         [torch.masked_select(
+            #             torch.reshape(X[k], (-1,)),
+            #             torch.reshape(self.mask, (-1,))
+            #         ) for k in range(X.shape[0])]))
+
+            std, mu = torch.std_mean(X, dim=0)
+
             X = (X - mu) / std * self.mask
             return X, self.mask
