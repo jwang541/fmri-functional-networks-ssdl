@@ -32,6 +32,9 @@ if __name__ == '__main__':
         mask = mask.bool().to(device)
         fns = (mask * model((mask * mri)[None]))[0, :, :, :, 0]
 
+        # TODO: currently the dataset reverses the spatial dimensions, fix this later
+        fns = fns.transpose(1, 2)
+
         X = torch.reshape(mri, (mri.shape[0], -1))
         V = torch.reshape(fns, (fns.shape[0], -1))
         flattened_mask = torch.reshape(mask, (-1,))
@@ -58,72 +61,13 @@ if __name__ == '__main__':
             V_learned[k][flattened_mask] = V_nz[k]
         V_learned = V_learned.cpu()
 
-        # visualize fmri datasets
-        mri_data = (mri * mask)[:, :, :, 0].cpu()
-        rows, columns = 4, 5
-        fig = plt.figure(figsize=(10, 10))
-        for i in range(rows * columns):
-            fig.add_subplot(rows, columns, i + 1)
-            plt.imshow(mri_data[i])
-            plt.xticks([])
-            plt.yticks([])
-
-
         # visualize learned FNs of a single subject
         fns_learned_data = torch.reshape(V_learned, fns.shape)
-        rows, columns = 4, 5
-        fig = plt.figure(figsize=(10, 10))
-        for i in range(fns_learned_data.shape[0]):
-            fig.add_subplot(rows, columns, i + 1)
-            plt.imshow(fns_learned_data[i])
-            plt.xticks([])
-            plt.yticks([])
-
-
-
-        # visualize reconstructed mri datasets
-        mri_approx_data = torch.reshape(X_approx, mri_data.shape)
-        rows, columns = 2, 5
-        fig = plt.figure(figsize=(10, 10))
-        fig.add_subplot(rows, columns, 1)
-        plt.imshow(mri_data[0])
-        plt.xticks([])
-        plt.yticks([])
-        fig.add_subplot(rows, columns, 2)
-        plt.imshow(mri_data[20])
-        plt.xticks([])
-        plt.yticks([])
-        fig.add_subplot(rows, columns, 3)
-        plt.imshow(mri_data[40])
-        plt.xticks([])
-        plt.yticks([])
-        fig.add_subplot(rows, columns, 4)
-        plt.imshow(mri_data[60])
-        plt.xticks([])
-        plt.yticks([])
-        fig.add_subplot(rows, columns, 5)
-        plt.imshow(mri_data[80])
-        plt.xticks([])
-        plt.yticks([])
-        fig.add_subplot(rows, columns, 6)
-        plt.imshow(mri_approx_data[0])
-        plt.xticks([])
-        plt.yticks([])
-        fig.add_subplot(rows, columns, 7)
-        plt.imshow(mri_approx_data[20])
-        plt.xticks([])
-        plt.yticks([])
-        fig.add_subplot(rows, columns, 8)
-        plt.imshow(mri_approx_data[40])
-        plt.xticks([])
-        plt.yticks([])
-        fig.add_subplot(rows, columns, 9)
-        plt.imshow(mri_approx_data[60])
-        plt.xticks([])
-        plt.yticks([])
-        fig.add_subplot(rows, columns, 10)
-        plt.imshow(mri_approx_data[80])
-        plt.xticks([])
-        plt.yticks([])
-
+        fig, axes = plt.subplots(4, 5, figsize=(10, 8))
+        axes = axes.flatten()
+        for i in range(20):
+            axes[i].imshow(fns_learned_data[i], cmap='gray')
+            axes[i].axis('off')
+            axes[i].set_title(str(i + 1), fontsize=10, pad=2)
+        plt.tight_layout()
         plt.show()
