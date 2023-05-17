@@ -1,5 +1,6 @@
 import sys
 import scipy
+import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -8,10 +9,14 @@ import matplotlib.pyplot as plt
 #
 
 if __name__ == '__main__':
+
+    # load simtb data 
     data_path = sys.argv[1]
     data = scipy.io.loadmat(data_path)
     source_maps = data['SM']
-
+    time_courses = data['TC']
+    
+    # display simtb source maps using matplotlib
     reshaped_source_maps = source_maps.reshape(20, 128, 128)
     fig, axes = plt.subplots(4, 5, figsize=(10, 8))
     axes = axes.flatten()
@@ -21,3 +26,15 @@ if __name__ == '__main__':
         axes[i].set_title(str(i + 1), fontsize=10, pad=2)
     plt.tight_layout()
     plt.show()
+
+    # calculate time course correlation and print to console
+    tc_correlation = np.zeros((20, 20))
+    for i in range(20):
+        print(time_courses[:, i].shape, np.mean(time_courses[:, i]), np.var(time_courses[:, i]))
+        for j in range(20):
+            r, _ = scipy.stats.pearsonr(time_courses[:, i], time_courses[:, j])
+            tc_correlation[i, j] = r
+    np.set_printoptions(suppress=True)
+    np.set_printoptions(precision=2)
+    np.set_printoptions(linewidth=100000)
+    print(tc_correlation)
