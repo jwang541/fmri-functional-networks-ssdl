@@ -26,7 +26,8 @@ class SimulatedDatasetNII(Dataset):
         self.mask_file = os.path.join(self.dir, 'mask.nii')
         mask_img = nib.load(self.mask_file)
         mask_dat = mask_img.get_fdata()
-        self.mask = torch.greater(torch.from_numpy(mask_dat), 0.01)
+        self.mask = torch.greater(torch.permute(
+            torch.from_numpy(mask_dat), (2, 1, 0)), 0.01)
 
         self.n_components = params['sP'][0][0][1][0][0]
         self.fmri_size = params['sP'][0][0][2][0][0]
@@ -52,7 +53,7 @@ class SimulatedDatasetNII(Dataset):
             torch_dat = torch.from_numpy(nifti_dat)
 
             # TODO: currently the dataset reverses the spatial dimensions
-            X = torch.permute(torch_dat, (3, 0, 1, 2))
+            X = torch.permute(torch_dat, (3, 2, 1, 0))
 
             # std, mu = torch.std_mean(
             #     torch.stack(

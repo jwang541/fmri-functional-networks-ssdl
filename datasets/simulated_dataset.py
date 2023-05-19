@@ -45,7 +45,7 @@ class SimulatedDataset(Dataset):
 
         with torch.no_grad():
             torch_data = torch.from_numpy(data)
-            X = torch.reshape(torch_data, (self.n_time_points, self.fmri_size, self.fmri_size, 1))
+            X = torch.reshape(torch_data, (self.n_time_points, 1, self.fmri_size, self.fmri_size))
 
             mask = torch.greater(X, 200.0)[0, :, :, :]
             std, mu = torch.std_mean(

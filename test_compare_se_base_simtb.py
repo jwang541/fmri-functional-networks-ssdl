@@ -74,10 +74,6 @@ if __name__ == '__main__':
             Y_se = (se_model(X) * mask)[0]
             mask = mask[0]
 
-            # TODO: currently the dataset reverses the spatial dimensions
-            Y_base = Y_base.transpose(1, 2)
-            Y_se = Y_se.transpose(1, 2)
-
             # flatten mask outputs across spatial dimensions
             Y_base_mat = torch.reshape(Y_base, (Y_base.shape[0], -1))
             Y_se_mat = torch.reshape(Y_se, (Y_se.shape[0], -1))

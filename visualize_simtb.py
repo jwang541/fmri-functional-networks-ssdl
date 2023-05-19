@@ -30,7 +30,6 @@ if __name__ == '__main__':
     # calculate time course correlation and print to console
     tc_correlation = np.zeros((20, 20))
     for i in range(20):
-        print(time_courses[:, i].shape, np.mean(time_courses[:, i]), np.var(time_courses[:, i]))
         for j in range(20):
             r, _ = scipy.stats.pearsonr(time_courses[:, i], time_courses[:, j])
             tc_correlation[i, j] = r

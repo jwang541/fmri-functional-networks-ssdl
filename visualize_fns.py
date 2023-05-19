@@ -30,10 +30,7 @@ if __name__ == '__main__':
         mri, mask = testset.__getitem__(13)
         mri = mri.float().to(device)
         mask = mask.bool().to(device)
-        fns = (mask * model((mask * mri)[None]))[0, :, :, :, 0]
-
-        # TODO: currently the dataset reverses the spatial dimensions, fix this later
-        fns = fns.transpose(1, 2)
+        fns = (mask * model((mask * mri)[None]))[0, :, 0, :, :]
 
         X = torch.reshape(mri, (mri.shape[0], -1))
         V = torch.reshape(fns, (fns.shape[0], -1))

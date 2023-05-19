@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from config import *
 from model import BaseModel, AttentionModel
-from loss import finetune_loss, pretrain_loss
+from loss import finetune_loss
 from datasets import SimulatedDataset, SimulatedDatasetNII
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

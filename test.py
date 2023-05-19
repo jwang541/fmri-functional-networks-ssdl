@@ -3,7 +3,7 @@ import torch
 from config import *
 from model import BaseModel, AttentionModel
 from datasets import SimulatedDataset, SimulatedDatasetNII
-from loss import finetune_loss
+from loss import finetune_loss, pretrain_loss
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,7 +42,7 @@ if __name__ == '__main__':
             X = mask * X
             Y = mask * model(X)
 
-            loss = finetune_loss(mri=X, fns=Y, mask=mask, trade_off=config.sparse_trade_off)
+            loss = finetune_loss(mri=X, fns=Y, mask=mask, trade_off=0)
             running_loss += loss.item()
 
         print(running_loss / len(testset))
